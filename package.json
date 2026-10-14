@@ -1,0 +1,27 @@
+{
+  "name": "amazon-alexa-plus-homeops",
+  "version": "1.0.0",
+  "description": "HomeOps: Autonomous Smart Home Operations Agent for Alexa+ with AWS Bedrock & Open Source SDK",
+  "scripts": {
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "build:all": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "npm run dev:backend"
+  },
+  "keywords": [
+    "alexa-plus",
+    "aws-bedrock",
+    "smart-home",
+    "autonomous-agents",
+    "amazon-hackathon-2026",
+    "homeops",
+    "open-source-sdk"
+  ],
+  "author": "Amazon Developer Hackathon Team",
+  "license": "Apache-2.0"
+}

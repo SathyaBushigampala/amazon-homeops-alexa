@@ -1,0 +1,120 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "HomeOps Alexa+ Agentic Action Group",
+    "description": "OpenAPI schema for AWS Bedrock Agent and Alexa+ HomeOps Autonomous Orchestration",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/diagnose": {
+      "post": {
+        "summary": "Run whole-home diagnostic scan",
+        "description": "Scans climate, security, energy, air, and water sensors for anomalies",
+        "operationId": "diagnose_system_anomalies",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "domain": {
+                    "type": "string",
+                    "enum": ["all", "climate", "security", "energy", "water", "air_quality"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Diagnostic findings and anomalies array",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "anomalies": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/climate/adjust": {
+      "post": {
+        "summary": "Adjust thermostat climate zone",
+        "operationId": "adjust_climate_zone",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "zoneId": { "type": "string" },
+                  "targetTemperature": { "type": "number" },
+                  "mode": { "type": "string", "enum": ["cool", "heat", "eco", "off"] }
+                },
+                "required": ["zoneId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Thermostat updated successfully" }
+        }
+      }
+    },
+    "/security/lockdown": {
+      "post": {
+        "summary": "Execute perimeter lockdown",
+        "operationId": "execute_security_lockdown",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "level": { "type": "string", "enum": ["perimeter", "full"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Perimeter secured" }
+        }
+      }
+    },
+    "/energy/optimize": {
+      "post": {
+        "summary": "Shift energy draw to battery / peak shaving",
+        "operationId": "optimize_energy_draw",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": { "type": "string", "enum": ["battery_peak_shaving", "eco_curtailment", "balanced"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Energy optimized" }
+        }
+      }
+    }
+  }
+}

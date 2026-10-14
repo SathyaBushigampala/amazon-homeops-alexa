@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  HomeOps: Autonomous Smart Home Operations Agent for Alexa+ with AWS Bedrock, DynamoDB, and EventBridge.
+  Stack entry for Amazon Developer Hackathon (AWS Builder Challenge).
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs20.x
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        DYNAMODB_TABLE_DEVICES: !Ref DevicesTable
+        DYNAMODB_TABLE_PLANS: !Ref PlansTable
+        EVENTBRIDGE_BUS_NAME: !Ref HomeOpsEventBus
+
+Resources:
+  # ----------------- DYNAMODB STATE STORES -----------------
+  DevicesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: HomeOps_Devices
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: category
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CategoryIndex
+          KeySchema:
+            - AttributeName: category
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  PlansTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: HomeOps_Plans
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: planId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: planId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+
+  # ----------------- EVENTBRIDGE EVENT BUS -----------------
+  HomeOpsEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: HomeOps-HomeEvents-Bus
+
+  # ----------------- LAMBDA ACTION HANDLER -----------------
+  HomeOpsBedrockActionHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: HomeOps-BedrockActionGroup-Handler
+      InlineCode: |
+        exports.handler = async (event) => {
+          console.log('Received Bedrock Action Group Event:', JSON.stringify(event));
+          const apiPath = event.apiPath;
+          const httpMethod = event.httpMethod;
+          return {
+            messageVersion: '1.0',
+            response: {
+              actionGroup: event.actionGroup,
+              apiPath: apiPath,
+              httpMethod: httpMethod,
+              httpStatusCode: 200,
+              responseBody: {
+                'application/json': {
+                  body: JSON.stringify({ status: 'success', message: 'Action dispatched to HomeOps device network' })
+                }
+              }
+            }
+          };
+        };
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DevicesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlansTable
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref HomeOpsEventBus
+
+  # ----------------- AWS BEDROCK AGENT -----------------
+  HomeOpsBedrockAgentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: HomeOpsBedrockAgentRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BedrockAgentPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !GetAtt HomeOpsBedrockActionHandler.Arn
+
+Outputs:
+  DevicesTableName:
+    Description: DynamoDB Devices Table Name
+    Value: !Ref DevicesTable
+  PlansTableName:
+    Description: DynamoDB Plans Table Name
+    Value: !Ref PlansTable
+  EventBusArn:
+    Description: EventBridge Custom Bus ARN
+    Value: !GetAtt HomeOpsEventBus.Arn
+  BedrockActionHandlerArn:
+    Description: Lambda Function ARN for Bedrock Action Group
+    Value: !GetAtt HomeOpsBedrockActionHandler.Arn
