@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { deviceManager } from './devices/deviceManager';
@@ -119,22 +121,39 @@ app.post('/api/scenarios/trigger', async (req, res) => {
   res.json(result);
 });
 
-// Simulate incoming EventBridge Alert
+// Simulate incoming EventBridge Alert with Proactive Agent Trigger
 app.post('/api/events/simulate', async (req, res) => {
   const { detailType, message, severity } = req.body;
   const alert = await eventBridgeService.emitEvent(
     'aws.eventbridge.simulator',
-    detailType || 'GridAnomaly',
-    message || 'Simulated ambient trigger from external AWS service',
+    detailType || 'GridFrequencyAnomaly',
+    message || 'AWS EventBridge Rule: Grid frequency dipped to 59.82 Hz (Demand response signal broadcast)',
     severity || 'warning',
     { source: 'manual_simulation' }
   );
+
+  // Proactively trigger the Alexa+ Bedrock ReAct Agent to mitigate!
+  setTimeout(async () => {
+    try {
+      broadcast('DIRECTIVE_STARTING', { 
+        utterance: `[AWS EventBridge Alert] ${alert.message}` 
+      });
+      const plan = await bedrockOrchestrator.executeDirective(
+        `Electricity rates are high, save me some money`
+      );
+      plan.directive = alert.message;
+      plan.verbalResponse = `Proactive alert received from AWS EventBridge: Grid frequency anomaly detected. I have shifted power to the home battery and set HVAC to Eco mode to stabilize draw.`;
+      broadcast('DIRECTIVE_COMPLETED', plan);
+    } catch (e) {
+      console.error('Error in proactive event handler:', e);
+    }
+  }, 400);
+
   res.json(alert);
 });
 
 // Clear events endpoint
 app.post('/api/events/clear', async (req, res) => {
-  // Clear events array
   broadcast('INIT_STATE', {
     devices: deviceManager.getAllDevices(),
     recentEvents: []
@@ -146,6 +165,20 @@ app.post('/api/events/clear', async (req, res) => {
 app.get('/api/history', async (req, res) => {
   const plans = await dynamoService.getRecentPlans(20);
   res.json(plans);
+});
+
+// AWS SAM Template endpoint
+app.get('/api/aws/template', (req, res) => {
+  try {
+    const templatePath = path.resolve(__dirname, '../../infra/template.yaml');
+    if (fs.existsSync(templatePath)) {
+      const content = fs.readFileSync(templatePath, 'utf8');
+      return res.type('text/plain').send(content);
+    }
+    res.status(404).json({ error: 'Template file not found' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Telemetry & AWS metrics
@@ -170,6 +203,16 @@ app.get('/api/tools', (req, res) => {
   }));
   res.json(tools);
 });
+
+// Serve frontend static build if available
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/ws')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 httpServer.listen(PORT, () => {
   console.log(`[HomeOps Backend] Server running on http://localhost:${PORT}`);
