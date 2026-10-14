@@ -185,7 +185,6 @@ amazon-homeops-alexa/
 - [x] **Public Code Repository**: Complete source code, zero secrets, Apache 2.0 license.
 - [x] **Demo Video Script**: Under 3-minute presentation script in [`docs/DEMO_VIDEO_SCRIPT.md`](./docs/DEMO_VIDEO_SCRIPT.md).
 - [x] **Product Feedback**: Actionable feedback for the Amazon developer team in [`docs/PRODUCT_FEEDBACK.md`](./docs/PRODUCT_FEEDBACK.md).
-- [x] **Comprehensive Project PDF**: [`Amazon_Hackathon_Project_Documentation.pdf`](./Amazon_Hackathon_Project_Documentation.pdf).
 
 ---
 
