@@ -153,6 +153,42 @@ export class BedrockOrchestrator {
       summary = 'Spotted elevated AQI in the living room; engaged HEPA filtration at Turbo speed, restoring AQI to 32.';
       verbalResponse = 'I detected elevated airborne particulates in the living room. I have kicked the HEPA filtration into Turbo mode, and air quality is already recovering back to healthy levels.';
     }
+    // Scenario 5: Direct Climate Adjustment
+    else if (lower.includes('temp') || lower.includes('degree') || lower.includes('cool') || lower.includes('heat') || lower.includes('thermostat') || lower.includes('ac')) {
+      const match = lower.match(/\b([5-8][0-9])\b/);
+      const targetTemp = match ? parseInt(match[1]) : 70;
+      const targetMode = lower.includes('heat') ? 'heat' : 'cool';
+
+      steps.push({
+        stepNumber: 1,
+        thought: `User requested temperature adjustment. Setting smart climate zones to ${targetTemp}°F in ${targetMode} mode.`,
+        action: { tool: 'adjust_climate_zone', params: { zoneId: 'all', targetTemperature: targetTemp, mode: targetMode } },
+        timestamp: new Date().toISOString()
+      });
+
+      const res = await agentTools.adjust_climate_zone.execute({ zoneId: 'all', targetTemperature: targetTemp, mode: targetMode });
+      steps[0].observation = `Applied ${targetTemp}°F to Living Room and Master Bedroom thermostats.`;
+      actionsTaken.push({ tool: res.tool, target: res.target, status: res.status, result: res.data });
+
+      summary = `Adjusted all home thermostats to ${targetTemp}°F (${targetMode} mode).`;
+      verbalResponse = `I've set your thermostats to ${targetTemp} degrees. The compressors are modulating accordingly.`;
+    }
+    // Scenario 6: Direct Lock/Security Command
+    else if (lower.includes('lock') || lower.includes('deadbolt') || lower.includes('door') || lower.includes('perimeter')) {
+      steps.push({
+        stepNumber: 1,
+        thought: 'Inspecting access points and locking all exterior deadbolts.',
+        action: { tool: 'execute_security_lockdown', params: { level: 'perimeter' } },
+        timestamp: new Date().toISOString()
+      });
+
+      const res = await agentTools.execute_security_lockdown.execute({ level: 'perimeter' });
+      steps[0].observation = res.message;
+      actionsTaken.push({ tool: res.tool, target: res.target, status: res.status, result: res.data });
+
+      summary = 'Locked front deadbolt, secured patio sliding door, and armed perimeter.';
+      verbalResponse = 'All exterior doors are now locked, and your security perimeter is armed.';
+    }
     // Generic Diagnostic / Home Overview
     else {
       steps.push({

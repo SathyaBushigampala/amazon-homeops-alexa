@@ -159,6 +159,41 @@ export class DeviceManager {
 
     dev.attributes[attribute] = value;
     dev.lastUpdated = new Date().toISOString();
+
+    // Auto-normalize status and power draw based on realistic physics
+    if (dev.category === 'security') {
+      if (dev.attributes.locked === true && (dev.attributes.doorState === 'closed' || dev.attributes.doorState === undefined)) {
+        dev.status = 'online';
+      } else if (dev.attributes.locked === false || dev.attributes.doorState === 'ajar') {
+        dev.status = 'alerting';
+      }
+    }
+
+    if (dev.category === 'climate') {
+      if (attribute === 'mode') {
+        if (value === 'eco') dev.powerDrawWatts = 130;
+        else if (value === 'off') dev.powerDrawWatts = 5;
+        else dev.powerDrawWatts = 410;
+      }
+    }
+
+    if (dev.category === 'air_quality') {
+      if (attribute === 'aqi') {
+        dev.status = value > 100 ? 'alerting' : 'online';
+      }
+      if (attribute === 'fanSpeed' && value === 'turbo') {
+        dev.powerDrawWatts = 65;
+        dev.attributes.aqi = Math.min(dev.attributes.aqi, 35);
+        dev.status = 'online';
+      }
+    }
+
+    if (dev.category === 'water') {
+      if (attribute === 'pipeTempF') {
+        dev.status = value < 34 ? 'alerting' : 'online';
+      }
+    }
+
     this.notifySubscribers();
     return dev;
   }

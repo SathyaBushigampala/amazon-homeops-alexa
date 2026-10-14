@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Mic, Send, Volume2, Sparkles, Activity, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mic, MicOff, Send, Volume2, Sparkles, Activity, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { AgentPlanExecution } from '../types';
 
 interface AlexaConsoleProps {
@@ -15,6 +15,8 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
 
   const quickDirectives = [
     { text: "Alexa, prepare the house for bedtime", tag: "Night Mode" },
@@ -23,6 +25,56 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
     { text: "Alexa, I smell smoke in the living room", tag: "Air Purge" },
     { text: "Alexa, do a full system diagnostic", tag: "Diagnostics" }
   ];
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setSpeechSupported(true);
+    }
+  }, []);
+
+  const handleStartListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please type your directive.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputText(transcript);
+        setIsListening(false);
+        // Automatically dispatch if detected
+        if (transcript.trim()) {
+          onSendDirective(transcript.trim());
+          setInputText('');
+        }
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch (e) {
+      console.error(e);
+      setIsListening(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,11 +107,17 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
           {/* Alexa+ Acoustic Ring */}
           <div className="relative flex items-center justify-center">
             <div className={`w-8 h-8 rounded-full border-2 transition-all duration-700 flex items-center justify-center ${
-              isLoading 
+              isListening
+                ? 'border-rose-400 shadow-[0_0_25px_rgba(244,63,94,0.9)] animate-pulse'
+                : isLoading 
                 ? 'border-cyan-400 shadow-[0_0_20px_rgba(0,202,255,0.9)] animate-spin' 
                 : 'border-cyan-500/60 shadow-[0_0_12px_rgba(0,202,255,0.4)]'
             }`}>
-              <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-500" />
+              <div className={`w-4 h-4 rounded-full ${
+                isListening 
+                  ? 'bg-rose-500 animate-ping' 
+                  : 'bg-gradient-to-tr from-cyan-400 to-blue-500'
+              }`} />
             </div>
           </div>
           <div>
@@ -70,7 +128,7 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              {isLoading ? 'Reasoning with AWS Bedrock...' : 'Listening for natural directives'}
+              {isListening ? '🎙️ Listening to your voice now...' : isLoading ? 'Reasoning with AWS Bedrock...' : 'Listening for natural directives'}
             </p>
           </div>
         </div>
@@ -96,7 +154,7 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
                 onClick={() => handleSpeakAloud(latestPlan.verbalResponse)}
                 className={`p-1.5 rounded-lg border transition-all ${
                   isSpeaking
-                    ? 'bg-cyan-500 text-black border-cyan-400 animate-pulse'
+                    ? 'bg-cyan-500 text-black border-cyan-400 animate-pulse shadow-md shadow-cyan-400/50'
                     : 'bg-slate-900 text-slate-300 border-slate-800 hover:text-cyan-300 hover:border-cyan-500/40'
                 }`}
                 title="Play voice output via SpeechSynthesis"
@@ -112,7 +170,7 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
           <div className="flex flex-col items-center justify-center h-full py-4 text-center">
             <Activity className="w-6 h-6 text-cyan-500/50 mb-2 animate-pulse-slow" />
             <p className="text-xs text-slate-400">
-              Speak or pick a voice directive below to start autonomous smart home orchestration.
+              Speak using the microphone or pick a quick suggestion below to start autonomous smart home orchestration.
             </p>
           </div>
         )}
@@ -120,7 +178,7 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
         {latestPlan && (
           <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
             <span className="truncate max-w-[220px]">
-              Prompt: <span className="text-slate-300 italic">"{latestPlan.directive}"</span>
+              Directive: <span className="text-slate-300 italic">"{latestPlan.directive}"</span>
             </span>
             <span className="font-mono text-cyan-400 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -140,7 +198,7 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
             <button
               key={idx}
               onClick={() => onSendDirective(d.text)}
-              disabled={isLoading}
+              disabled={isLoading || isListening}
               className="text-xs px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-cyan-950/60 border border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-cyan-200 transition-all text-left flex items-center gap-1.5 disabled:opacity-50"
             >
               <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-cyan-500/10 text-cyan-400">
@@ -152,21 +210,39 @@ export const AlexaConsole: React.FC<AlexaConsoleProps> = ({
         </div>
       </div>
 
-      {/* Directive Input Bar */}
+      {/* Directive Input Bar with Voice Recognition Button */}
       <form onSubmit={handleSubmit} className="relative flex items-center">
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Speak or type a directive (e.g. 'Alexa, bedtime mode')..."
-          disabled={isLoading}
-          className="w-full bg-slate-950/80 border border-slate-800 focus:border-cyan-500 rounded-2xl pl-10 pr-24 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all"
+          placeholder={isListening ? "Listening to your voice..." : "Speak or type a directive (e.g. 'Alexa, bedtime mode')..."}
+          disabled={isLoading || isListening}
+          className={`w-full bg-slate-950/80 border rounded-2xl pl-11 pr-24 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none transition-all ${
+            isListening 
+              ? 'border-rose-500 ring-2 ring-rose-500/40' 
+              : 'border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50'
+          }`}
         />
-        <Mic className={`absolute left-3 w-4 h-4 transition-colors ${isLoading ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
+        
+        {/* Real microphone button */}
+        <button
+          type="button"
+          onClick={handleStartListening}
+          disabled={isLoading}
+          title={speechSupported ? "Click to speak via microphone" : "Speech recognition not supported"}
+          className={`absolute left-2.5 p-1.5 rounded-xl transition-all ${
+            isListening 
+              ? 'bg-rose-500 text-white animate-pulse' 
+              : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-900'
+          }`}
+        >
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+        </button>
         
         <button
           type="submit"
-          disabled={!inputText.trim() || isLoading}
+          disabled={!inputText.trim() || isLoading || isListening}
           className="absolute right-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-500/20 disabled:opacity-40 disabled:pointer-events-none transition-all"
         >
           <span>Send</span>

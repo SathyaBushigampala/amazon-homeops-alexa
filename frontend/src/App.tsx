@@ -111,6 +111,19 @@ export const App: React.FC = () => {
     }
   };
 
+  // Toggle/Update device attributes directly
+  const handleToggleDevice = async (id: string, attribute: string, value: any) => {
+    try {
+      await fetch(`/api/devices/${id}/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attribute, value })
+      });
+    } catch (err) {
+      console.error('Failed to toggle device:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans">
       {/* Top Navbar */}
@@ -146,7 +159,7 @@ export const App: React.FC = () => {
 
           {/* Right Column: Physical Smart Home Device Mesh (7 cols) */}
           <div className="lg:col-span-7">
-            <DeviceGrid devices={devices} />
+            <DeviceGrid devices={devices} onToggleDevice={handleToggleDevice} />
           </div>
         </div>
       </main>
