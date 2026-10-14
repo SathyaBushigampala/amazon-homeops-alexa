@@ -48,7 +48,10 @@ export const App: React.FC = () => {
           } else if (msg.type === 'DEVICES_UPDATED') {
             setDevices(msg.data);
           } else if (msg.type === 'EVENTBRIDGE_ALERT') {
-            setRecentEvents(prev => [msg.data, ...prev.slice(0, 20)]);
+            setRecentEvents(prev => {
+              if (prev.some(e => e.id === msg.data.id)) return prev;
+              return [msg.data, ...prev.slice(0, 25)];
+            });
           } else if (msg.type === 'DIRECTIVE_STARTING') {
             setIsLoading(true);
           } else if (msg.type === 'DIRECTIVE_COMPLETED') {
@@ -124,6 +127,29 @@ export const App: React.FC = () => {
     }
   };
 
+  // Clear EventBridge log
+  const handleClearEvents = async () => {
+    try {
+      await fetch('/api/events/clear', { method: 'POST' });
+      setRecentEvents([]);
+    } catch (err) {
+      console.error('Failed to clear events:', err);
+    }
+  };
+
+  // Simulate incoming ambient event
+  const handleSimulateEvent = async (detailType: string, message: string, severity: 'info' | 'warning' | 'critical') => {
+    try {
+      await fetch('/api/events/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ detailType, message, severity })
+      });
+    } catch (err) {
+      console.error('Failed to simulate event:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans">
       {/* Top Navbar */}
@@ -176,6 +202,9 @@ export const App: React.FC = () => {
         isOpen={isAwsModalOpen}
         onClose={() => setIsAwsModalOpen(false)}
         recentEvents={recentEvents}
+        latestPlan={latestPlan}
+        onClearEvents={handleClearEvents}
+        onSimulateEvent={handleSimulateEvent}
       />
 
       <SdkModal

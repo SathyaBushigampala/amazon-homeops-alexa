@@ -119,6 +119,29 @@ app.post('/api/scenarios/trigger', async (req, res) => {
   res.json(result);
 });
 
+// Simulate incoming EventBridge Alert
+app.post('/api/events/simulate', async (req, res) => {
+  const { detailType, message, severity } = req.body;
+  const alert = await eventBridgeService.emitEvent(
+    'aws.eventbridge.simulator',
+    detailType || 'GridAnomaly',
+    message || 'Simulated ambient trigger from external AWS service',
+    severity || 'warning',
+    { source: 'manual_simulation' }
+  );
+  res.json(alert);
+});
+
+// Clear events endpoint
+app.post('/api/events/clear', async (req, res) => {
+  // Clear events array
+  broadcast('INIT_STATE', {
+    devices: deviceManager.getAllDevices(),
+    recentEvents: []
+  });
+  res.json({ success: true });
+});
+
 // History endpoint
 app.get('/api/history', async (req, res) => {
   const plans = await dynamoService.getRecentPlans(20);
