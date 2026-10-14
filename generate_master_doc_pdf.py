@@ -33,8 +33,8 @@ class MasterNumberedCanvas(canvas.Canvas):
         # Don't draw header/footer on cover page
         if self._pageNumber > 1:
             # Header
-            self.drawString(45, letter[1] - 32, "HomeOps: Autonomous Smart Home Operations Agent • Amazon Hackathon Project Documentation")
-            self.drawRightString(letter[0] - 45, letter[1] - 32, "Alexa+ & AWS Builder Track")
+            self.drawString(45, letter[1] - 32, "Project: HomeOps (Autonomous Smart Home Operations Agent) • Lead: Sathya")
+            self.drawRightString(letter[0] - 45, letter[1] - 32, "Amazon Developer Hackathon 2026")
             self.setStrokeColor(colors.HexColor("#CBD5E0"))
             self.setLineWidth(0.5)
             self.line(45, letter[1] - 38, letter[0] - 45, letter[1] - 38)
@@ -176,6 +176,8 @@ def build_pdf(filename="Amazon_Hackathon_Project_Documentation.pdf"):
     story.append(HRFlowable(width="100%", thickness=3, color=cyan, spaceBefore=0, spaceAfter=20))
 
     cover_meta = [
+        [Paragraph("<b>Project Name:</b>", body_style), Paragraph("<font size='10' color='#007A99'><b>HomeOps (Autonomous Smart Home Operations Agent)</b></font>", body_style)],
+        [Paragraph("<b>Lead Developer / Author:</b>", body_style), Paragraph("<b>Sathya</b> (HomeOps Engineering Lead)", body_style)],
         [Paragraph("<b>Hackathon:</b>", body_style), Paragraph("Build, Ship, Shape: Amazon Developer Hackathon 2026", body_style)],
         [Paragraph("<b>Primary Track:</b>", body_style), Paragraph("Alexa+ Track (Agentic Voice & Ambient AI)", body_style)],
         [Paragraph("<b>Mini-Challenges Stacked:</b>", body_style), Paragraph("1. AWS Builder Challenge (Bedrock, DynamoDB, EventBridge, SAM)<br/>2. Open Source Challenge (@homeops/alexa-plus-sdk)", body_style)],
