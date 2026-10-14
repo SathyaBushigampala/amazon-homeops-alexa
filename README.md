@@ -1,4 +1,4 @@
-# HomeOps 🌐 Autonomous Smart Home Operations Agent for Alexa+
+# Amazon HomeOps Alexa 🌐 Autonomous Smart Home Operations Agent
 
 > **Build, Ship, Shape: Amazon Developer Hackathon 2026**  
 > **Track**: Alexa+ Track  
@@ -172,6 +172,12 @@ amazon-homeops-alexa/
 └── README.md                       # This document
 ```
 
+## 👤 Author & Team
+- **Author / Lead Engineer**: **Sathya Bushigampala**
+- **GitHub Profile**: [@SathyaBushigampala](https://github.com/SathyaBushigampala)
+- **Repository URL**: [https://github.com/SathyaBushigampala/amazon-homeops-alexa](https://github.com/SathyaBushigampala/amazon-homeops-alexa)
+- **Hackathon**: Build, Ship, Shape: Amazon Developer Hackathon 2026 (Alexa+ Track & AWS Builder)
+
 ---
 
 ## 📜 Deliverables Checklist
@@ -179,8 +185,10 @@ amazon-homeops-alexa/
 - [x] **Public Code Repository**: Complete source code, zero secrets, Apache 2.0 license.
 - [x] **Demo Video Script**: Under 3-minute presentation script in [`docs/DEMO_VIDEO_SCRIPT.md`](./docs/DEMO_VIDEO_SCRIPT.md).
 - [x] **Product Feedback**: Actionable feedback for the Amazon developer team in [`docs/PRODUCT_FEEDBACK.md`](./docs/PRODUCT_FEEDBACK.md).
+- [x] **Comprehensive Project PDF**: [`Amazon_Hackathon_Project_Documentation.pdf`](./Amazon_Hackathon_Project_Documentation.pdf).
 
 ---
 
 ## 📄 License
 Licensed under the [Apache License, Version 2.0](./LICENSE).
+
